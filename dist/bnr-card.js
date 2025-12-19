@@ -34,7 +34,7 @@ class BnrExchangeCard extends LitElement {
   renderHeader(type) {
     if (type === 'exchange') {
       return html`
-        <div class="cell align-left">Monedă</div>
+        <div class="cell align-left">Monedă (BNR)</div>
         <div class="cell align-right">💰 Vânzare</div>
         <div class="cell align-right">🛒 Cumpărare</div>`;
     } else if (type === 'euribor') {
@@ -74,9 +74,17 @@ class BnrExchangeCard extends LitElement {
     if (type === 'exchange') {
       const vanzare = stateObj.attributes['Vânzare'] || '—';
       const cumparare = stateObj.attributes['Cumpărare'] || '—';
+
+      // Căutăm automat senzorul BNR corespondent pentru a afișa cursul în paranteză
+      const bnrSuffix = entityId.split('_').pop(); // extrage 'eur', 'usd', etc.
+      const bnrEntityId = `sensor.curs_valutar_ron_${bnrSuffix}`;
+      const bnrState = this.hass.states[bnrEntityId] ? Number(this.hass.states[bnrEntityId].state).toFixed(4) : '—';
+
       return html`
         <div class="currency-grid exchange-mode row">
-          <div class="cell bold align-left">${label} <span class="small-state">(${symbol}${stateObj.state})</span></div>
+          <div class="cell bold align-left">
+            ${label} <span class="small-state">(${bnrState})</span>
+          </div>
           <div class="cell bold align-right value-cell">${vanzare}</div>
           <div class="cell bold align-right value-cell">${cumparare}</div>
         </div>
@@ -125,10 +133,9 @@ class BnrExchangeCard extends LitElement {
         height: 100%;
         width: 100%;
         box-sizing: border-box;
-        --ha-card-header-font-size: 16px; /* Titlu mai mic */
+        --ha-card-header-font-size: 16px;
       }
 
-      /* Forțare Bold pe titlul cardului */
       .card-header {
         font-weight: bold !important;
         padding-bottom: 8px !important;
@@ -137,8 +144,8 @@ class BnrExchangeCard extends LitElement {
       .card-content { padding: 0 16px 16px 16px; }
       .currency-grid { display: grid; gap: 8px; align-items: center; width: 100%; }
 
-      .bnr-mode { grid-template-columns: 1.5fr 1.2fr 1fr 0.8fr; }
-      .exchange-mode { grid-template-columns: 1.5fr 1fr 1fr; }
+      .bnr-mode { grid-template-columns: 1.3fr 1.2fr 1fr 0.8fr; }
+      .exchange-mode { grid-template-columns: 1.4fr 1fr 1fr; }
       .euribor-mode { grid-template-columns: 1.5fr 1fr; }
 
       .header {
@@ -155,7 +162,7 @@ class BnrExchangeCard extends LitElement {
       .row:last-child { border-bottom: none; }
 
       .cell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .small-state { font-size: 0.75em; font-weight: normal; opacity: 0.7; }
+      .small-state { font-size: 0.85em; font-weight: normal; opacity: 0.7; color: var(--secondary-text-color); }
       .value-cell { color: var(--primary-color); }
       .align-left { text-align: left; }
       .align-right { text-align: right; font-variant-numeric: tabular-nums; }
