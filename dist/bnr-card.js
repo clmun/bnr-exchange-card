@@ -20,10 +20,10 @@ class BnrExchangeCard extends LitElement {
           <table>
             <thead>
               <tr>
-                <th>Monedă</th>
-                <th>Curs BNR</th>
-                <th>Diferență</th>
-                <th>%</th>
+                <th class="align-left">Monedă</th>
+                <th class="align-right">Curs BNR</th>
+                <th class="align-right">Diferență</th>
+                <th class="align-right">%</th>
               </tr>
             </thead>
             <tbody>
@@ -37,13 +37,13 @@ class BnrExchangeCard extends LitElement {
 
   renderRow(entityId) {
     const stateObj = this.hass.states[entityId];
-    if (!stateObj) return html`<tr><td colspan="4">Entitate negăsită: ${entityId}</td></tr>`;
+    if (!stateObj) return html`<tr><td colspan="4" class="error">Entitate negăsită: ${entityId}</td></tr>`;
 
-    const val = stateObj.state;
+    const val = isNaN(stateObj.state) ? stateObj.state : Number(stateObj.state).toFixed(4);
     const diff = stateObj.attributes['Schimbare'] || 0;
     const pct = stateObj.attributes['Schimbare procentuală'] || 0;
-    const symbol = this.getSymbol(entityId);
 
+    const symbol = this.getSymbol(entityId);
     const isUp = diff > 0;
     const isDown = diff < 0;
     const color = isUp ? "#4caf50" : isDown ? "#f44336" : "grey";
@@ -51,42 +51,56 @@ class BnrExchangeCard extends LitElement {
 
     return html`
       <tr>
-        <td class="bold">${this.getLabel(entityId)}</td>
-        <td class="bold">${symbol} ${val}</td>
-        <td style="color: ${color}">${icon} ${Math.abs(diff).toFixed(4)}</td>
-        <td style="color: ${color}">${icon} ${Math.abs(pct).toFixed(2)}%</td>
+        <td class="bold align-left">${this.getLabel(entityId)}</td>
+        <td class="bold align-right">${symbol} ${val}</td>
+        <td class="align-right" style="color: ${color}">${icon} ${Math.abs(diff).toFixed(4)}</td>
+        <td class="align-right" style="color: ${color}">${icon} ${Math.abs(pct).toFixed(2)}%</td>
       </tr>
     `;
   }
 
   getSymbol(id) {
-    if (id.includes('eur')) return '€';
-    if (id.includes('usd')) return '$';
-    if (id.includes('gbp')) return '£';
-    if (id.includes('chf')) return '₣';
+    const lowId = id.toLowerCase();
+    if (lowId.includes('eur')) return '€';
+    if (lowId.includes('usd')) return '$';
+    if (lowId.includes('gbp')) return '£';
+    if (lowId.includes('chf')) return '₣';
     return '';
   }
 
   getLabel(id) {
-    if (id.includes('eur')) return '🇪🇺 EUR';
-    if (id.includes('usd')) return '🇺🇸 USD';
-    if (id.includes('gbp')) return '🇬🇧 GBP';
-    if (id.includes('chf')) return '🇨🇭 CHF';
-    return id;
+    const lowId = id.toLowerCase();
+    if (lowId.includes('eur')) return '🇪🇺 EUR';
+    if (lowId.includes('usd')) return '🇺🇸 USD';
+    if (lowId.includes('gbp')) return '🇬🇧 GBP';
+    if (lowId.includes('chf')) return '🇨🇭 CHF';
+    // Dacă nu e una din cele de sus, curățăm numele entității
+    return id.split('.').pop().replace(/_/g, ' ').toUpperCase();
   }
 
   static get styles() {
     return css`
       ha-card { padding: 16px; }
-      table { width: 100%; border-collapse: collapse; }
-      th { text-align: left; padding-bottom: 8px; font-size: 0.9em; color: var(--secondary-text-color); }
-      td { padding: 8px 0; border-bottom: 1px solid var(--divider-color); font-size: 14px; }
+      table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+      th {
+        padding-bottom: 12px;
+        font-size: 0.8em;
+        color: var(--secondary-text-color);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      td { padding: 10px 0; border-bottom: 1px solid var(--divider-color); font-size: 13px; }
       .bold { font-weight: bold; }
+      .align-left { text-align: left; width: 35%; }
+      .align-right { text-align: right; font-variant-numeric: tabular-nums; }
+      .error { color: var(--error-color); font-size: 0.8em; }
     `;
   }
 
   setConfig(config) {
-    if (!config.entities) throw new Error("Trebuie să definești entitățile!");
+    if (!config.entities || !Array.isArray(config.entities)) {
+      throw new Error("Te rugăm să definești o listă de entități!");
+    }
     this.config = config;
   }
 }
