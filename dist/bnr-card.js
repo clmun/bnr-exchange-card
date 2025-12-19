@@ -14,8 +14,8 @@ class BnrExchangeCard extends LitElement {
 
   render() {
     if (!this.hass || !this.config) return html``;
-    const type = this.config.card_type || 'bnr';
     const entities = this.config.entities || [];
+    const type = this.config.card_type || 'bnr';
 
     return html`
       <ha-card header="${this.config.title || ''}">
@@ -33,101 +33,121 @@ class BnrExchangeCard extends LitElement {
 
   renderHeader(type) {
     if (type === 'exchange') {
-      return html`<div class="cell align-left">Monedă</div><div class="cell align-right">💰 Vânzare</div><div class="cell align-right">🛒 Cumpărare</div>`;
+      return html`
+        <div class="cell align-left">Monedă</div>
+        <div class="cell align-right">💰 Vânzare</div>
+        <div class="cell align-right">🛒 Cumpărare</div>`;
     } else if (type === 'euribor') {
-      return html`<div class="cell align-left">Perioadă</div><div class="cell align-right">Rată %</div>`;
+      return html`
+        <div class="cell align-left">Perioadă</div>
+        <div class="cell align-right">Rată %</div>`;
+    } else {
+      return html`
+        <div class="cell align-left">Monedă</div>
+        <div class="cell align-right">Curs BNR</div>
+        <div class="cell align-right">Dif.</div>
+        <div class="cell align-right">%</div>`;
     }
-    return html`<div class="cell align-left">Monedă</div><div class="cell align-right">Curs BNR</div><div class="cell align-right">Dif.</div><div class="cell align-right">%</div>`;
   }
 
   renderRow(entityId, type) {
-    const s = this.hass.states[entityId];
-    if (!s) return html`<div class="error">Senzor negăsit: ${entityId}</div>`;
+    const stateObj = this.hass.states[entityId];
+    if (!stateObj) return html`<div class="error">Entitate negăsită: ${entityId}</div>`;
 
     if (type === 'euribor') {
-      // Definim cheile exact cum apar în senzorul tău
-      const mappings = [
-        { key: '1 lună', label: 'Euribor 1M' },
-        { key: '3 luni', label: 'Euribor 3M' },
-        { key: '6 luni', label: 'Euribor 6M' },
-        { key: '12 luni', label: 'Euribor 12M' }
-      ];
+      // Accesăm atributele folosind cheile exacte
+      const periods = ['1 lună', '3 luni', '6 luni', '12 luni'];
       return html`
-        ${mappings.map(m => html`
-          <div class="currency-grid euribor-mode row">
-            <div class="cell bold align-left">${m.label}</div>
-            <div class="cell bold align-right value-cell">${s.attributes[m.key] ? Number(s.attributes[m.key]).toFixed(3) : '—'} %</div>
-          </div>
-        `)}
+        ${periods.map(p => {
+          const val = stateObj.attributes[p];
+          return html`
+            <div class="currency-grid euribor-mode row">
+              <div class="cell bold align-left">${p}</div>
+              <div class="cell bold align-right value-cell">
+                ${val !== undefined ? Number(val).toFixed(3) : '—'} %
+              </div>
+            </div>
+          `;
+        })}
       `;
     }
 
-    const label = this.getLabel(entityId);
     const symbol = this.getSymbol(entityId);
+    const label = this.getLabel(entityId);
 
     if (type === 'exchange') {
+      const vanzare = stateObj.attributes['Vânzare'] || '—';
+      const cumparare = stateObj.attributes['Cumpărare'] || '—';
       return html`
         <div class="currency-grid exchange-mode row">
-          <div class="cell bold align-left">${label} <span class="small-state">(${symbol}${s.state})</span></div>
-          <div class="cell bold align-right value-cell">${s.attributes['Vânzare'] || '—'}</div>
-          <div class="cell bold align-right value-cell">${s.attributes['Cumpărare'] || '—'}</div>
+          <div class="cell bold align-left">${label} <span class="small-state">(${symbol}${stateObj.state})</span></div>
+          <div class="cell bold align-right value-cell">${vanzare}</div>
+          <div class="cell bold align-right value-cell">${cumparare}</div>
+        </div>
+      `;
+    } else {
+      const val = isNaN(stateObj.state) ? stateObj.state : Number(stateObj.state).toFixed(4);
+      const diff = stateObj.attributes['Schimbare'] || 0;
+      const pct = stateObj.attributes['Schimbare procentuală'] || 0;
+      const color = diff > 0 ? "#4caf50" : diff < 0 ? "#f44336" : "var(--secondary-text-color)";
+      const icon = diff > 0 ? "▲" : diff < 0 ? "▼" : "—";
+
+      return html`
+        <div class="currency-grid bnr-mode row">
+          <div class="cell bold align-left">${label}</div>
+          <div class="cell bold align-right">${symbol} ${val}</div>
+          <div class="cell align-right" style="color: ${color}">${icon} ${Math.abs(diff).toFixed(4)}</div>
+          <div class="cell align-right" style="color: ${color}">${Math.abs(pct).toFixed(2)}%</div>
         </div>
       `;
     }
-
-    // Modul BNR (Default)
-    const diff = s.attributes['Schimbare'] || 0;
-    const pct = s.attributes['Schimbare procentuală'] || 0;
-    const color = diff > 0 ? "#4caf50" : diff < 0 ? "#f44336" : "grey";
-    const icon = diff > 0 ? "▲" : diff < 0 ? "▼" : "—";
-
-    return html`
-      <div class="currency-grid bnr-mode row">
-        <div class="cell bold align-left">${label}</div>
-        <div class="cell bold align-right">${symbol} ${Number(s.state).toFixed(4)}</div>
-        <div class="cell align-right" style="color: ${color}">${icon} ${Math.abs(diff).toFixed(4)}</div>
-        <div class="cell align-right" style="color: ${color}">${Math.abs(pct).toFixed(2)}%</div>
-      </div>
-    `;
   }
 
   getSymbol(id) {
-    if (id.includes('eur')) return '€';
-    if (id.includes('usd')) return '$';
-    if (id.includes('gbp')) return '£';
-    if (id.includes('chf')) return '₣';
+    const lowId = id.toLowerCase();
+    if (lowId.includes('eur')) return '€';
+    if (lowId.includes('usd')) return '$';
+    if (lowId.includes('gbp')) return '£';
+    if (lowId.includes('chf')) return '₣';
     return '';
   }
 
   getLabel(id) {
-    if (id.includes('eur')) return '🇪🇺 EUR';
-    if (id.includes('usd')) return '🇺🇸 USD';
-    if (id.includes('gbp')) return '🇬🇧 GBP';
-    if (id.includes('chf')) return '🇨🇭 CHF';
-    return id.split('.').pop().toUpperCase();
+    const lowId = id.toLowerCase();
+    if (lowId.includes('eur')) return '🇪🇺 EUR';
+    if (lowId.includes('usd')) return '🇺🇸 USD';
+    if (lowId.includes('gbp')) return '🇬🇧 GBP';
+    if (lowId.includes('chf')) return '🇨🇭 CHF';
+    return id.split('.').pop().replace(/_/g, ' ').toUpperCase();
   }
 
   static get styles() {
     return css`
       :host { display: block; width: 100%; }
-      ha-card { height: 100%; width: 100%; }
+      ha-card { height: 100%; width: 100%; box-sizing: border-box; }
       .card-content { padding: 0 16px 16px 16px; }
-      .currency-grid { display: grid; gap: 8px; align-items: center; }
+      .currency-grid { display: grid; gap: 8px; align-items: center; width: 100%; }
       .bnr-mode { grid-template-columns: 1.5fr 1.2fr 1fr 0.8fr; }
       .exchange-mode { grid-template-columns: 1.5fr 1fr 1fr; }
       .euribor-mode { grid-template-columns: 1.5fr 1fr; }
-      .header { border-bottom: 2px solid var(--divider-color); padding: 12px 0 8px 0; font-size: 0.8em; color: var(--secondary-text-color); text-transform: uppercase; }
+      .header { border-bottom: 2px solid var(--divider-color); padding: 12px 0 8px 0; font-size: 0.8em; font-weight: bold; color: var(--secondary-text-color); text-transform: uppercase; }
       .row { padding: 12px 4px; border-bottom: 1px solid var(--divider-color); }
       .row:nth-of-type(even) { background-color: var(--secondary-background-color); border-radius: 4px; }
+      .row:last-child { border-bottom: none; }
       .cell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .small-state { font-size: 0.75em; font-weight: normal; opacity: 0.7; }
+      .value-cell { color: var(--primary-color); }
       .align-left { text-align: left; }
       .align-right { text-align: right; font-variant-numeric: tabular-nums; }
       .bold { font-weight: 600; }
-      .value-cell { color: var(--primary-color); }
-      .small-state { font-size: 0.75em; opacity: 0.6; font-weight: normal; }
+      .error { color: var(--error-color); font-size: 0.8em; padding: 10px 0; }
     `;
   }
 
-  setConfig(config) { this.config = config; }
+  setConfig(config) {
+    if (!config.entities) throw new Error("Definiți entitățile!");
+    this.config = config;
+  }
 }
+
 customElements.define("bnr-exchange-card", BnrExchangeCard);
