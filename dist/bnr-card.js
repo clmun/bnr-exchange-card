@@ -23,7 +23,9 @@ class BnrExchangeCard extends LitElement {
             <div class="cell align-right">Dif.</div>
             <div class="cell align-right">%</div>
           </div>
-          ${entities.map((ent) => this.renderRow(ent))}
+          <div class="rows-container">
+            ${entities.map((ent) => this.renderRow(ent))}
+          </div>
         </div>
       </ha-card>
     `;
@@ -73,36 +75,51 @@ class BnrExchangeCard extends LitElement {
 
   static get styles() {
     return css`
+      :host {
+        display: block;
+        width: 100%;
+      }
       ha-card {
         height: 100%;
+        width: 100%;
         display: flex;
         flex-direction: column;
+        box-sizing: border-box;
       }
       .card-content {
         padding: 0 16px 16px 16px;
+        flex-grow: 1;
       }
       .currency-grid {
         display: grid;
-        /* Împarțirea coloanelor: prima coloană flexibilă, restul egale */
-        grid-template-columns: 1.2fr 1fr 1fr 0.8fr;
-        gap: 4px;
+        grid-template-columns: 1.5fr 1.2fr 1fr 0.8fr;
+        gap: 8px;
         align-items: center;
+        width: 100%;
       }
       .header {
-        border-bottom: 1px solid var(--divider-color);
-        padding-bottom: 8px;
-        margin-bottom: 8px;
-        font-size: 0.8em;
+        border-bottom: 2px solid var(--divider-color);
+        padding: 12px 0 8px 0;
+        font-size: 0.85em;
         font-weight: bold;
         color: var(--secondary-text-color);
         text-transform: uppercase;
       }
       .row {
-        padding: 10px 0;
-        border-bottom: 1px dotted var(--divider-color);
+        padding: 12px 4px;
+        border-bottom: 1px solid var(--divider-color);
+        transition: background-color 0.2s;
+      }
+      /* Efectul Zebra: fundal diferit pentru rândurile pare */
+      .row:nth-of-type(even) {
+        background-color: var(--secondary-background-color);
+        border-radius: 4px;
       }
       .row:last-child {
         border-bottom: none;
+      }
+      .row:hover {
+        background-color: var(--hover-type-color, rgba(255, 255, 255, 0.05));
       }
       .cell {
         overflow: hidden;
@@ -114,21 +131,7 @@ class BnrExchangeCard extends LitElement {
         text-align: right;
         font-variant-numeric: tabular-nums;
       }
-      .bold { font-weight: 500; }
-      .error {
-        color: var(--error-color);
-        font-size: 0.8em;
-        padding: 10px 0;
-      }
-
-      /* Adaptare pentru secțiuni foarte înguste */
-      @container (max-width: 300px) {
-        .currency-grid {
-          grid-template-columns: 1fr 1fr;
-          grid-template-rows: auto auto;
-        }
-        .header { display: none; }
-      }
+      .bold { font-weight: 600; }
     `;
   }
 
