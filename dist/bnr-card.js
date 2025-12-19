@@ -17,8 +17,20 @@ class BnrExchangeCard extends LitElement {
     const entities = this.config.entities || [];
     const type = this.config.card_type || 'bnr';
 
+    // Generăm data curentă în format românesc
+    const azi = new Date();
+    const dataFormatata = azi.toLocaleDateString('ro-RO', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+
     return html`
-      <ha-card header="${this.config.title || ''}">
+      <ha-card>
+        <div class="custom-header">
+          <div class="main-title">${this.config.title || 'Curs Valutar'}</div>
+          <div class="date-display">${dataFormatata}</div>
+        </div>
         <div class="card-content">
           <div class="currency-grid ${type}-mode header">
             ${this.renderHeader(type)}
@@ -74,8 +86,7 @@ class BnrExchangeCard extends LitElement {
       const vanzare = stateObj.attributes['Vânzare'] || '—';
       const cumparare = stateObj.attributes['Cumpărare'] || '—';
 
-      // EXTRACȚIE CORECTĂ: Căutăm valoarea din sensor.curs_valutar_ron_...
-      const currencyCode = entityId.split('_').pop(); // extrage 'eur', 'usd', 'gbp' sau 'chf'
+      const currencyCode = entityId.split('_').pop();
       const bnrEntityId = `sensor.curs_valutar_ron_${currencyCode}`;
       const bnrStateObj = this.hass.states[bnrEntityId];
       const bnrValue = bnrStateObj ? Number(bnrStateObj.state).toFixed(4) : '—';
@@ -129,17 +140,49 @@ class BnrExchangeCard extends LitElement {
   static get styles() {
     return css`
       :host { display: block; width: 100%; }
-      ha-card { height: 100%; width: 100%; box-sizing: border-box; --ha-card-header-font-size: 16px; }
-      .card-header { font-weight: bold !important; padding-bottom: 8px !important; }
+      ha-card { height: 100%; width: 100%; box-sizing: border-box; }
+
+      /* Header Personalizat */
+      .custom-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 16px 8px 16px;
+      }
+
+      .main-title {
+        font-size: 16px;
+        font-weight: bold;
+        color: var(--primary-text-color);
+      }
+
+      .date-display {
+        font-size: 12px;
+        font-weight: bold;
+        color: var(--secondary-text-color);
+        text-transform: capitalize;
+      }
+
       .card-content { padding: 0 16px 16px 16px; }
       .currency-grid { display: grid; gap: 8px; align-items: center; width: 100%; }
+
       .bnr-mode { grid-template-columns: 1.3fr 1.2fr 1fr 0.8fr; }
       .exchange-mode { grid-template-columns: 1.5fr 1fr 1fr; }
       .euribor-mode { grid-template-columns: 1.5fr 1fr; }
-      .header { border-bottom: 2px solid var(--divider-color); padding: 12px 0 8px 0; font-size: 0.8em; font-weight: bold; color: var(--secondary-text-color); text-transform: uppercase; }
+
+      .header {
+        border-bottom: 2px solid var(--divider-color);
+        padding: 4px 0 8px 0;
+        font-size: 0.8em;
+        font-weight: bold;
+        color: var(--secondary-text-color);
+        text-transform: uppercase;
+      }
+
       .row { padding: 12px 4px; border-bottom: 1px solid var(--divider-color); }
       .row:nth-of-type(even) { background-color: var(--secondary-background-color); border-radius: 4px; }
       .row:last-child { border-bottom: none; }
+
       .cell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .small-state { font-size: 0.8em; font-weight: normal; opacity: 0.7; color: var(--secondary-text-color); margin-left: 4px; }
       .value-cell { color: var(--primary-color); }
