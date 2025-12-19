@@ -68,28 +68,29 @@ class BnrExchangeCard extends LitElement {
       `;
     }
 
-    const symbol = this.getSymbol(entityId);
     const label = this.getLabel(entityId);
 
     if (type === 'exchange') {
       const vanzare = stateObj.attributes['Vânzare'] || '—';
       const cumparare = stateObj.attributes['Cumpărare'] || '—';
 
-      // Căutăm automat senzorul BNR corespondent pentru a afișa cursul în paranteză
-      const bnrSuffix = entityId.split('_').pop(); // extrage 'eur', 'usd', etc.
-      const bnrEntityId = `sensor.curs_valutar_ron_${bnrSuffix}`;
-      const bnrState = this.hass.states[bnrEntityId] ? Number(this.hass.states[bnrEntityId].state).toFixed(4) : '—';
+      // EXTRACȚIE CORECTĂ: Căutăm valoarea din sensor.curs_valutar_ron_...
+      const currencyCode = entityId.split('_').pop(); // extrage 'eur', 'usd', 'gbp' sau 'chf'
+      const bnrEntityId = `sensor.curs_valutar_ron_${currencyCode}`;
+      const bnrStateObj = this.hass.states[bnrEntityId];
+      const bnrValue = bnrStateObj ? Number(bnrStateObj.state).toFixed(4) : '—';
 
       return html`
         <div class="currency-grid exchange-mode row">
           <div class="cell bold align-left">
-            ${label} <span class="small-state">(${bnrState})</span>
+            ${label} <span class="small-state">(${bnrValue})</span>
           </div>
           <div class="cell bold align-right value-cell">${vanzare}</div>
           <div class="cell bold align-right value-cell">${cumparare}</div>
         </div>
       `;
     } else {
+      const symbol = this.getSymbol(entityId);
       const val = isNaN(stateObj.state) ? stateObj.state : Number(stateObj.state).toFixed(4);
       const diff = stateObj.attributes['Schimbare'] || 0;
       const pct = stateObj.attributes['Schimbare procentuală'] || 0;
@@ -128,41 +129,19 @@ class BnrExchangeCard extends LitElement {
   static get styles() {
     return css`
       :host { display: block; width: 100%; }
-
-      ha-card {
-        height: 100%;
-        width: 100%;
-        box-sizing: border-box;
-        --ha-card-header-font-size: 16px;
-      }
-
-      .card-header {
-        font-weight: bold !important;
-        padding-bottom: 8px !important;
-      }
-
+      ha-card { height: 100%; width: 100%; box-sizing: border-box; --ha-card-header-font-size: 16px; }
+      .card-header { font-weight: bold !important; padding-bottom: 8px !important; }
       .card-content { padding: 0 16px 16px 16px; }
       .currency-grid { display: grid; gap: 8px; align-items: center; width: 100%; }
-
       .bnr-mode { grid-template-columns: 1.3fr 1.2fr 1fr 0.8fr; }
-      .exchange-mode { grid-template-columns: 1.4fr 1fr 1fr; }
+      .exchange-mode { grid-template-columns: 1.5fr 1fr 1fr; }
       .euribor-mode { grid-template-columns: 1.5fr 1fr; }
-
-      .header {
-        border-bottom: 2px solid var(--divider-color);
-        padding: 12px 0 8px 0;
-        font-size: 0.8em;
-        font-weight: bold;
-        color: var(--secondary-text-color);
-        text-transform: uppercase;
-      }
-
+      .header { border-bottom: 2px solid var(--divider-color); padding: 12px 0 8px 0; font-size: 0.8em; font-weight: bold; color: var(--secondary-text-color); text-transform: uppercase; }
       .row { padding: 12px 4px; border-bottom: 1px solid var(--divider-color); }
       .row:nth-of-type(even) { background-color: var(--secondary-background-color); border-radius: 4px; }
       .row:last-child { border-bottom: none; }
-
       .cell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .small-state { font-size: 0.85em; font-weight: normal; opacity: 0.7; color: var(--secondary-text-color); }
+      .small-state { font-size: 0.8em; font-weight: normal; opacity: 0.7; color: var(--secondary-text-color); margin-left: 4px; }
       .value-cell { color: var(--primary-color); }
       .align-left { text-align: left; }
       .align-right { text-align: right; font-variant-numeric: tabular-nums; }
