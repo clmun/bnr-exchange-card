@@ -13,7 +13,6 @@ class BnrExchangeCard extends LitElement {
   }
 
   render() {
-    if (!this.hass || !this.config) return html``;
     const entities = this.config.entities || [];
     const type = this.config.card_type || 'bnr';
 
@@ -55,20 +54,14 @@ class BnrExchangeCard extends LitElement {
     if (!stateObj) return html`<div class="error">Entitate negăsită: ${entityId}</div>`;
 
     if (type === 'euribor') {
-      // Accesăm atributele folosind cheile exacte
       const periods = ['1 lună', '3 luni', '6 luni', '12 luni'];
       return html`
-        ${periods.map(p => {
-          const val = stateObj.attributes[p];
-          return html`
-            <div class="currency-grid euribor-mode row">
-              <div class="cell bold align-left">${p}</div>
-              <div class="cell bold align-right value-cell">
-                ${val !== undefined ? Number(val).toFixed(3) : '—'} %
-              </div>
-            </div>
-          `;
-        })}
+        ${periods.map(p => html`
+          <div class="currency-grid euribor-mode row">
+            <div class="cell bold align-left">${p}</div>
+            <div class="cell bold align-right value-cell">${stateObj.attributes[p] ? stateObj.attributes[p].toFixed(3) : '—'} %</div>
+          </div>
+        `)}
       `;
     }
 
