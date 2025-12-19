@@ -13,6 +13,7 @@ class BnrExchangeCard extends LitElement {
   }
 
   render() {
+    if (!this.hass || !this.config) return html``;
     const entities = this.config.entities || [];
     const type = this.config.card_type || 'bnr';
 
@@ -59,7 +60,9 @@ class BnrExchangeCard extends LitElement {
         ${periods.map(p => html`
           <div class="currency-grid euribor-mode row">
             <div class="cell bold align-left">${p}</div>
-            <div class="cell bold align-right value-cell">${stateObj.attributes[p] ? stateObj.attributes[p].toFixed(3) : '—'} %</div>
+            <div class="cell bold align-right value-cell">
+               ${stateObj.attributes[p] !== undefined ? Number(stateObj.attributes[p]).toFixed(3) : '—'} %
+            </div>
           </div>
         `)}
       `;
@@ -117,16 +120,40 @@ class BnrExchangeCard extends LitElement {
   static get styles() {
     return css`
       :host { display: block; width: 100%; }
-      ha-card { height: 100%; width: 100%; box-sizing: border-box; }
+
+      ha-card {
+        height: 100%;
+        width: 100%;
+        box-sizing: border-box;
+        --ha-card-header-font-size: 16px; /* Titlu mai mic */
+      }
+
+      /* Forțare Bold pe titlul cardului */
+      .card-header {
+        font-weight: bold !important;
+        padding-bottom: 8px !important;
+      }
+
       .card-content { padding: 0 16px 16px 16px; }
       .currency-grid { display: grid; gap: 8px; align-items: center; width: 100%; }
+
       .bnr-mode { grid-template-columns: 1.5fr 1.2fr 1fr 0.8fr; }
       .exchange-mode { grid-template-columns: 1.5fr 1fr 1fr; }
       .euribor-mode { grid-template-columns: 1.5fr 1fr; }
-      .header { border-bottom: 2px solid var(--divider-color); padding: 12px 0 8px 0; font-size: 0.8em; font-weight: bold; color: var(--secondary-text-color); text-transform: uppercase; }
+
+      .header {
+        border-bottom: 2px solid var(--divider-color);
+        padding: 12px 0 8px 0;
+        font-size: 0.8em;
+        font-weight: bold;
+        color: var(--secondary-text-color);
+        text-transform: uppercase;
+      }
+
       .row { padding: 12px 4px; border-bottom: 1px solid var(--divider-color); }
       .row:nth-of-type(even) { background-color: var(--secondary-background-color); border-radius: 4px; }
       .row:last-child { border-bottom: none; }
+
       .cell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .small-state { font-size: 0.75em; font-weight: normal; opacity: 0.7; }
       .value-cell { color: var(--primary-color); }
