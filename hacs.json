@@ -1,0 +1,7 @@
+{
+  "name": "BNR Exchange Card",
+  "content_type": "plugin",
+  "filename": "bnr-card.js",
+  "render_as_panel": false,
+  "zip_release": false
+}
