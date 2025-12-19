@@ -14,11 +14,11 @@ class BnrExchangeCard extends LitElement {
 
   render() {
     if (!this.hass || !this.config) return html``;
-    const entities = this.config.entities || [];
     const type = this.config.card_type || 'bnr';
+    const entities = this.config.entities || [];
 
     return html`
-      <ha-card header="${this.config.title || ''}">
+      <ha-card header="${this.config.title || 'Card Valutar'}">
         <div class="card-content">
           <div class="currency-grid ${type}-mode header">
             ${this.renderHeader(type)}
@@ -32,120 +32,68 @@ class BnrExchangeCard extends LitElement {
   }
 
   renderHeader(type) {
-    if (type === 'exchange') {
+    if (type === 'euribor') {
       return html`
-        <div class="cell align-left">Monedă</div>
-        <div class="cell align-right">💰 Vânzare</div>
-        <div class="cell align-right">🛒 Cumpărare</div>`;
-    } else if (type === 'euribor') {
-      return html`
-        <div class="cell align-left">Perioadă</div>
-        <div class="cell align-right">Rată %</div>`;
-    } else {
-      return html`
-        <div class="cell align-left">Monedă</div>
-        <div class="cell align-right">Curs BNR</div>
-        <div class="cell align-right">Dif.</div>
-        <div class="cell align-right">%</div>`;
+        <div class="cell align-left">Perioadă (TEST)</div>
+        <div class="cell align-right">Valoare</div>`;
     }
+    return html`
+        <div class="cell align-left">Monedă</div>
+        <div class="cell align-right">Valoare</div>`;
   }
 
   renderRow(entityId, type) {
     const stateObj = this.hass.states[entityId];
-    if (!stateObj) return html`<div class="error">Entitate negăsită: ${entityId}</div>`;
 
+    // Dacă suntem pe EURIBOR, ignorăm atributele și punem text fix pentru test
     if (type === 'euribor') {
-      // Accesăm atributele folosind cheile exacte
-      const periods = ['1 lună', '3 luni', '6 luni', '12 luni'];
+      const testRows = [
+        { label: "Euribor 1M", value: "1.931%" },
+        { label: "Euribor 3M", value: "2.049%" },
+        { label: "Euribor 6M", value: "2.144%" },
+        { label: "Euribor 12M", value: "2.291%" }
+      ];
+
       return html`
-        ${periods.map(p => {
-          const val = stateObj.attributes[p];
-          return html`
-            <div class="currency-grid euribor-mode row">
-              <div class="cell bold align-left">${p}</div>
-              <div class="cell bold align-right value-cell">
-                ${val !== undefined ? Number(val).toFixed(3) : '—'} %
-              </div>
-            </div>
-          `;
-        })}
+        ${testRows.map(row => html`
+          <div class="currency-grid euribor-mode row">
+            <div class="cell bold align-left">${row.label}</div>
+            <div class="cell bold align-right value-cell">${row.value}</div>
+          </div>
+        `)}
+        <div class="small-info">Stare senzor: ${stateObj ? stateObj.state : 'Senzor negăsit'}</div>
       `;
     }
 
-    const symbol = this.getSymbol(entityId);
-    const label = this.getLabel(entityId);
-
-    if (type === 'exchange') {
-      const vanzare = stateObj.attributes['Vânzare'] || '—';
-      const cumparare = stateObj.attributes['Cumpărare'] || '—';
-      return html`
-        <div class="currency-grid exchange-mode row">
-          <div class="cell bold align-left">${label} <span class="small-state">(${symbol}${stateObj.state})</span></div>
-          <div class="cell bold align-right value-cell">${vanzare}</div>
-          <div class="cell bold align-right value-cell">${cumparare}</div>
-        </div>
-      `;
-    } else {
-      const val = isNaN(stateObj.state) ? stateObj.state : Number(stateObj.state).toFixed(4);
-      const diff = stateObj.attributes['Schimbare'] || 0;
-      const pct = stateObj.attributes['Schimbare procentuală'] || 0;
-      const color = diff > 0 ? "#4caf50" : diff < 0 ? "#f44336" : "var(--secondary-text-color)";
-      const icon = diff > 0 ? "▲" : diff < 0 ? "▼" : "—";
-
-      return html`
-        <div class="currency-grid bnr-mode row">
-          <div class="cell bold align-left">${label}</div>
-          <div class="cell bold align-right">${symbol} ${val}</div>
-          <div class="cell align-right" style="color: ${color}">${icon} ${Math.abs(diff).toFixed(4)}</div>
-          <div class="cell align-right" style="color: ${color}">${Math.abs(pct).toFixed(2)}%</div>
-        </div>
-      `;
-    }
-  }
-
-  getSymbol(id) {
-    const lowId = id.toLowerCase();
-    if (lowId.includes('eur')) return '€';
-    if (lowId.includes('usd')) return '$';
-    if (lowId.includes('gbp')) return '£';
-    if (lowId.includes('chf')) return '₣';
-    return '';
-  }
-
-  getLabel(id) {
-    const lowId = id.toLowerCase();
-    if (lowId.includes('eur')) return '🇪🇺 EUR';
-    if (lowId.includes('usd')) return '🇺🇸 USD';
-    if (lowId.includes('gbp')) return '🇬🇧 GBP';
-    if (lowId.includes('chf')) return '🇨🇭 CHF';
-    return id.split('.').pop().replace(/_/g, ' ').toUpperCase();
+    // Fallback pentru celelalte moduri (simplificat pentru test)
+    return html`
+      <div class="currency-grid bnr-mode row">
+        <div class="cell bold align-left">${entityId}</div>
+        <div class="cell bold align-right">${stateObj ? stateObj.state : '???'}</div>
+      </div>
+    `;
   }
 
   static get styles() {
     return css`
       :host { display: block; width: 100%; }
-      ha-card { height: 100%; width: 100%; box-sizing: border-box; }
+      ha-card { padding-bottom: 8px; }
       .card-content { padding: 0 16px 16px 16px; }
       .currency-grid { display: grid; gap: 8px; align-items: center; width: 100%; }
-      .bnr-mode { grid-template-columns: 1.5fr 1.2fr 1fr 0.8fr; }
-      .exchange-mode { grid-template-columns: 1.5fr 1fr 1fr; }
+      .bnr-mode { grid-template-columns: 1fr 1fr; }
       .euribor-mode { grid-template-columns: 1.5fr 1fr; }
       .header { border-bottom: 2px solid var(--divider-color); padding: 12px 0 8px 0; font-size: 0.8em; font-weight: bold; color: var(--secondary-text-color); text-transform: uppercase; }
       .row { padding: 12px 4px; border-bottom: 1px solid var(--divider-color); }
       .row:nth-of-type(even) { background-color: var(--secondary-background-color); border-radius: 4px; }
-      .row:last-child { border-bottom: none; }
-      .cell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .small-state { font-size: 0.75em; font-weight: normal; opacity: 0.7; }
       .value-cell { color: var(--primary-color); }
       .align-left { text-align: left; }
-      .align-right { text-align: right; font-variant-numeric: tabular-nums; }
+      .align-right { text-align: right; }
       .bold { font-weight: 600; }
-      .error { color: var(--error-color); font-size: 0.8em; padding: 10px 0; }
+      .small-info { font-size: 0.7em; opacity: 0.5; padding-top: 8px; }
     `;
   }
 
   setConfig(config) {
-    if (!config.entities) throw new Error("Definiți entitățile!");
     this.config = config;
   }
 }
